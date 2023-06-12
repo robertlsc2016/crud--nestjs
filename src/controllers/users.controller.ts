@@ -18,6 +18,13 @@ import { UsersService } from 'src/services/users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('/')
+  async helloWorld() {
+    return {
+      message: 'Hello world',
+    };
+  }
+
   @Get('/users')
   @ApiOperation({ summary: 'Get All Users' })
   async getAll(): Promise<Users[]> {
