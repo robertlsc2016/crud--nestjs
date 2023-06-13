@@ -9,6 +9,9 @@ import { Model } from 'mongoose';
 import { Users } from 'src/database/schemas/users.schema';
 import { CreateUserDto } from 'src/dtos/create-user.dto';
 import { UpdateUserDto } from 'src/dtos/update-user.dto';
+import { Readable } from 'stream';
+import * as csv from 'csv-parser';
+
 // import { UpdateUserDto } from 'src/dtos/update-user.dto';
 
 @Injectable()
@@ -45,4 +48,43 @@ export class UsersService {
     }
     return user;
   }
+
+  async processCsv(fileBuffer: Buffer) {
+    const stringCsv = fileBuffer.toString();
+    const dataList: CsvData[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+      Readable.from(stringCsv)
+        .pipe(csv())
+        .on('data', (row) => {
+          dataList.push(row);
+        })
+        .on('end', () => {
+          for (const data of dataList) {
+            console.log(this.isValidEmail(data.email));
+            if (data.name.trim() === '' || !this.isValidEmail(data.email)) {
+              reject(
+                new HttpException(
+                  'Elementos inválidos no arquivo CSV',
+                  HttpStatus.BAD_REQUEST,
+                ),
+              );
+
+              // return { error: 'Os dados possuem incompatibilidades' };
+            }
+          }
+          this.usersModel.insertMany(dataList);
+          resolve();
+        });
+    });
+  }
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+}
+
+interface CsvData {
+  name: string;
+  email: string;
 }
