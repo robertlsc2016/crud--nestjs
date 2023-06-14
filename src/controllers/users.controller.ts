@@ -8,8 +8,6 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
-  HttpException,
-  HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -18,16 +16,11 @@ import { UpdateUserDto } from 'src/dtos/update-user.dto';
 import { UsersEntity } from 'src/entities/users.entity';
 import { UsersService } from 'src/services/users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as csv from 'csv-parser';
 import { Readable } from 'stream';
-import { Pagination, paginate } from 'nestjs-typeorm-paginate';
 
-// const { createFsFromVolume, Volume } = require('memfs');
-// const fs = createFsFromVolume(new Volume());
 import { fs } from 'memfs';
 
 import { Express } from 'express';
-import multer, { memoryStorage } from 'multer';
 @ApiTags('Users')
 @Controller('/')
 export class UsersController {
@@ -76,7 +69,7 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (file.mimetype !== 'text/csv') {
-      throw new BadRequestException('O Arquivo não é .CSV')
+      throw new BadRequestException('O Arquivo não é .CSV');
     }
 
     fs.writeFileSync('/file.csv', file.buffer.toString());
