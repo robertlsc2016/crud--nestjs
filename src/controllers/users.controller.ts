@@ -8,18 +8,19 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
-  BadRequestException,
   HttpException,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from 'src/dtos/create-user.dto';
 import { UpdateUserDto } from 'src/dtos/update-user.dto';
-import { Users } from 'src/entities/users.entity';
+import { UsersEntity } from 'src/entities/users.entity';
 import { UsersService } from 'src/services/users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as csv from 'csv-parser';
 import { Readable } from 'stream';
+import { Pagination, paginate } from 'nestjs-typeorm-paginate';
 
 // const { createFsFromVolume, Volume } = require('memfs');
 // const fs = createFsFromVolume(new Volume());
@@ -41,19 +42,19 @@ export class UsersController {
 
   @Get('/users')
   @ApiOperation({ summary: 'Get All Users' })
-  async getAll(): Promise<Users[]> {
+  async getAll(): Promise<UsersEntity[]> {
     return await this.usersService.getAllUsers();
   }
 
   @Get('/user/:id')
   @ApiOperation({ summary: 'Get user by id' })
-  async getUser(@Param('id') id: string): Promise<Users> {
+  async getUser(@Param('id') id: string): Promise<UsersEntity> {
     return await this.usersService.getIdUser(id);
   }
 
   @Post('/new-user')
   @ApiOperation({ summary: 'Create a user' })
-  async createNewUser(@Body() user: CreateUserDto): Promise<Users> {
+  async createNewUser(@Body() user: CreateUserDto): Promise<UsersEntity> {
     return await this.usersService.createUser(user);
   }
 
@@ -62,7 +63,7 @@ export class UsersController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateUser: UpdateUserDto,
-  ): Promise<Users> {
+  ): Promise<UsersEntity> {
     return await this.usersService.updateUser(id, updateUser);
   }
 
@@ -74,38 +75,17 @@ export class UsersController {
   @Post('/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (file.mimetype !== 'text/csv') {
+      throw new BadRequestException('O Arquivo não é .CSV')
+    }
+
     fs.writeFileSync('/file.csv', file.buffer.toString());
     await this.usersService.processCsv(file.buffer);
   }
-  // @UseInterceptors(FileInterceptor('file'))
-  // uploadFile(@UploadedFile() file: Express.Multer.File) {
-  //   // console.log(file);
-  //   fs.writeFileSync('/file.csv', file.buffer.toString());
-  //   // console.log(fs.readFileSync('/file.csv', 'utf8').toString());
-  //   const stringCsv = fs.readFileSync('/file.csv', 'utf8').toString();
-  //   const dataList = [];
-  //   const readableStream = Readable.from(stringCsv)
-  //     .pipe(csv())
-  //     .on('data', (row) => {
-  //       dataList.push(row);
-  //     })
-  //     .on('end', () => {
-  //       for (const data of dataList) {
-  //         if (data.nome.trim() === '' || !isValidEmail(data.email)) {
-  //           throw new HttpException(
-  //             'Elementos inválidos no arquivo CSV',
-  //             HttpStatus.BAD_REQUEST,
-  //           );
-  //         }
-  //       }
 
-  //       // Restante do processamento do arquivo CSV
-  //       console.log(dataList);
-  //     });
-  // }
-}
-
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  @Get('/pagination/page=/:numberPage')
+  async getUsers(@Param('numberPage') numberPage: number) {
+    const users = await this.usersService.getPaginatedUsers(numberPage, 15);
+    return users;
+  }
 }

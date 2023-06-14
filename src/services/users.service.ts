@@ -1,9 +1,4 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Users } from 'src/database/schemas/users.schema';
@@ -11,8 +6,6 @@ import { CreateUserDto } from 'src/dtos/create-user.dto';
 import { UpdateUserDto } from 'src/dtos/update-user.dto';
 import { Readable } from 'stream';
 import * as csv from 'csv-parser';
-
-// import { UpdateUserDto } from 'src/dtos/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -50,8 +43,11 @@ export class UsersService {
   }
 
   async processCsv(fileBuffer: Buffer) {
+    
     const stringCsv = fileBuffer.toString();
     const dataList: CsvData[] = [];
+
+    console.log(stringCsv)
 
     await new Promise<void>((resolve, reject) => {
       Readable.from(stringCsv)
@@ -61,7 +57,6 @@ export class UsersService {
         })
         .on('end', () => {
           for (const data of dataList) {
-            console.log(this.isValidEmail(data.email));
             if (data.name.trim() === '' || !this.isValidEmail(data.email)) {
               reject(
                 new HttpException(
@@ -69,8 +64,6 @@ export class UsersService {
                   HttpStatus.BAD_REQUEST,
                 ),
               );
-
-              // return { error: 'Os dados possuem incompatibilidades' };
             }
           }
           this.usersModel.insertMany(dataList);
@@ -78,6 +71,18 @@ export class UsersService {
         });
     });
   }
+
+  async getPaginatedUsers(page: number, pageSize: number) {
+    const skip = (page - 1) * pageSize;
+    const users = await this.usersModel
+      .find()
+      .skip(skip)
+      .limit(pageSize)
+      .exec();
+
+    return users;
+  }
+
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
