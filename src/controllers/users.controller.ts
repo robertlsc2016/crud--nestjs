@@ -76,7 +76,7 @@ export class UsersController {
     await this.usersService.processCsv(file.buffer);
   }
 
-  @Get('/pagination/page=/:numberPage')
+  @Get('/pagination/page=:numberPage')
   async getUsers(@Param('numberPage') numberPage: number) {
     const users = await this.usersService.getPaginatedUsers(numberPage, 15);
     return users;
