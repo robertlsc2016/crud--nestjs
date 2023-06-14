@@ -16,7 +16,6 @@ import { UpdateUserDto } from 'src/dtos/update-user.dto';
 import { UsersEntity } from 'src/entities/users.entity';
 import { UsersService } from 'src/services/users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Readable } from 'stream';
 
 import { fs } from 'memfs';
 
@@ -37,6 +36,12 @@ export class UsersController {
   @ApiOperation({ summary: 'Get All Users' })
   async getAll(): Promise<UsersEntity[]> {
     return await this.usersService.getAllUsers();
+  }
+
+  @Get('/user/email/:email')
+  @ApiOperation({ summary: 'Get users by email' })
+  async getUserByEmail(@Param('email') email: string): Promise<UsersEntity[]> {
+    return await this.usersService.getUserByEmail(email);
   }
 
   @Get('/user/:id')

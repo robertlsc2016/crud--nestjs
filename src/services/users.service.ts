@@ -19,6 +19,10 @@ export class UsersService {
     return this.usersModel.findOne({ _id: id });
   }
 
+  async getUserByEmail(email: string): Promise<Users[]> {
+    return await this.usersModel.find({email})
+  }
+
   async createUser(createUser: CreateUserDto): Promise<Users> {
     return this.usersModel.create(createUser);
   }
@@ -43,11 +47,10 @@ export class UsersService {
   }
 
   async processCsv(fileBuffer: Buffer) {
-    
     const stringCsv = fileBuffer.toString();
     const dataList: CsvData[] = [];
 
-    console.log(stringCsv)
+    console.log(stringCsv);
 
     await new Promise<void>((resolve, reject) => {
       Readable.from(stringCsv)
